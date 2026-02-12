@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>症状整理ツール β版</title>
+<style>
+body{
+font-family:sans-serif;
+padding:20px;
+max-width:600px;
+margin:auto;
+background:#f7f7f7;
+}
+h1{
+font-size:20px;
+}
+textarea{
+width:100%;
+height:120px;
+margin-top:10px;
+padding:10px;
+font-size:14px;
+}
+button{
+margin-top:10px;
+padding:10px;
+width:100%;
+font-size:16px;
+background:#333;
+color:#fff;
+border:none;
+}
+.result{
+margin-top:20px;
+padding:15px;
+background:#fff;
+border-radius:8px;
+}
+.small{
+font-size:12px;
+color:#666;
+margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<h1>症状整理ツール β版</h1>
+
+<textarea id="input" placeholder="例：変な音がする、加速が遅い気がする など"></textarea>
+
+<button onclick="analyze()">整理する</button>
+
+<div class="result" id="output"></div>
+
+<script>
+
+const patterns = {
+音系:[
+"変な音がする","変な音",
+"カラカラ言う","カタカタする","ガラガラ言う",
+"一定間隔で音が鳴る","等間隔で音が鳴る","規則正しく音が鳴る",
+"擦れる音がする","異音がする","キュルキュル音がする",
+"ゴーという音がする","振動音がする","うなり音がする"
+],
+ズレ・滑り系:[
+"ズレる気がする","ズレてる","滑ってる気がする","滑ってる",
+"ブレてる気がする","噛み合ってない気がする"
+],
+加速・動力系:[
+"加速が遅い気がする","加速が遅い",
+"パワーがない気がする","回転が上がらない気がする",
+"エンジン止まった","ストールした","エンジンかからない"
+],
+ブレーキ系:[
+"ブレーキかかってる気がする","ブレーキかかってる",
+"ブレーキ引きずってる気がする","ブレーキ引きずってる",
+"ブレーキ効きが悪い気がする"
+],
+その他:[
+"空気抜けた","空気が抜けてる気がする",
+"いつもと違う気がする","違和感がある"
+]
+};
+
+function analyze(){
+let text=document.getElementById("input").value;
+if(text.trim()===""){
+alert("未記入です");
+return;
+}
+
+let resultHTML="<strong>入力内容：</strong><br>"+text+"<br><br>";
+
+let found=false;
+
+for(let category in patterns){
+let hits=[];
+patterns[category].forEach(word=>{
+if(text.includes(word)){
+hits.push(word);
+found=true;
+}
+});
+if(hits.length>0){
+resultHTML+="<strong>"+category+"</strong><br>";
+hits.forEach(h=>{ resultHTML+="・"+h+"<br>";});
+resultHTML+="<br>";
+}
+}
+
+if(!found){
+resultHTML+="該当する語彙はまだ登録されていません。";
+}
+
+resultHTML+=`
+<div class="small">
+※これは整理ツールです。診断ではありません。<br>
+ある程度データが集まったら、ここから診断候補を提示できる形に進化させる予定です。
+</div>
+`;
+
+document.getElementById("output").innerHTML=resultHTML;
+}
+
+</script>
+
+</body>
+</html>
