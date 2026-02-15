@@ -3,127 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>症状整理ツール β版</title>
+<title>症状整理ツール β版（5W1H）</title>
 <style>
-body{
-font-family:sans-serif;
-padding:20px;
-max-width:600px;
-margin:auto;
-background:#f7f7f7;
-}
-h1{
-font-size:20px;
-}
-textarea{
-width:100%;
-height:120px;
-margin-top:10px;
-padding:10px;
-font-size:14px;
-}
-button{
-margin-top:10px;
-padding:10px;
-width:100%;
-font-size:16px;
-background:#333;
-color:#fff;
-border:none;
-}
-.result{
-margin-top:20px;
-padding:15px;
-background:#fff;
-border-radius:8px;
-}
-.small{
-font-size:12px;
-color:#666;
-margin-top:10px;
-}
+body{font-family:sans-serif;padding:20px;max-width:680px;margin:auto;background:#f7f7f7;}
+h1{font-size:20px;}
+textarea{width:100%;height:140px;margin-top:10px;padding:10px;font-size:14px;}
+button{margin-top:10px;padding:10px;width:100%;font-size:16px;background:#333;color:#fff;border:none;}
+.result{margin-top:20px;padding:15px;background:#fff;border-radius:8px;}
+.block{margin-bottom:14px;}
+.small{font-size:12px;color:#666;margin-top:10px;}
+.miss{color:#b00020;}
 </style>
 </head>
 <body>
 
-<h1>症状整理ツール β版</h1>
+<h1>症状整理ツール β版（5W1H）</h1>
 
-<textarea id="input" placeholder="例：変な音がする、加速が遅い気がする など"></textarea>
-
-<button onclick="analyze()">整理する</button>
+<textarea id="input" placeholder="例：昨日、右リアからカラカラ音。低速で段差を越えると強い。始動も少しかかりにくい。"></textarea>
+<button onclick="analyze()">整理する（自動保存）</button>
 
 <div class="result" id="output"></div>
 
 <script>
-
-const patterns = {
-音系:[
-"変な音がする","変な音",
-"カラカラ言う","カタカタする","ガラガラ言う",
-"一定間隔で音が鳴る","等間隔で音が鳴る","規則正しく音が鳴る",
-"擦れる音がする","異音がする","キュルキュル音がする",
-"ゴーという音がする","振動音がする","うなり音がする"
-],
-ズレ・滑り系:[
-"ズレる気がする","ズレてる","滑ってる気がする","滑ってる",
-"ブレてる気がする","噛み合ってない気がする"
-],
-加速・動力系:[
-"加速が遅い気がする","加速が遅い",
-"パワーがない気がする","回転が上がらない気がする",
-"エンジン止まった","ストールした","エンジンかからない"
-],
-ブレーキ系:[
-"ブレーキかかってる気がする","ブレーキかかってる",
-"ブレーキ引きずってる気がする","ブレーキ引きずってる",
-"ブレーキ効きが悪い気がする"
-],
-その他:[
-"空気抜けた","空気が抜けてる気がする",
-"いつもと違う気がする","違和感がある"
-]
+// ===== 5W1H キーワード（必要に応じて増やせる） =====
+const dict = {
+  when: ["昨日","今日","さっき","朝","夜","冷間時","暖気後","走行中","停車中","加速時","減速時","低速","高速","段差","雨の日","寒い日"],
+  where:["右","左","前","後","フロント","リア","エンジン","足回り","ブレーキ","ハンドル","室内","下回り","右リア","左リア"],
+  what: ["音","異音","カラカラ","カタカタ","ガラガラ","振動","うなり","キュルキュル","始動不良","かかりにくい","止まる","ストール","加速しない","パワー不足"],
+  how:  ["強い","弱い","一定","断続的","毎回","たまに","徐々に","急に","ひどい","軽い"],
+  why:  ["ぶつけた","交換後","修理後","雨の後","洗車後","長期間放置","バッテリー弱い"]
 };
 
+// ===== 解析本体 =====
 function analyze(){
-let text=document.getElementById("input").value;
-if(text.trim()===""){
-alert("未記入です");
-return;
+  const text = document.getElementById("input").value.trim();
+  if(!text){ alert("未記入です"); return; }
+
+  const result = { when:[], where:[], what:[], how:[], why:[] };
+
+  Object.keys(dict).forEach(key=>{
+    dict[key].forEach(word=>{
+      if(text.includes(word)) result[key].push(word);
+    });
+  });
+
+  // ===== 表示 =====
+  let html = `<div class="block"><strong>入力内容：</strong><br>${escapeHtml(text)}</div>`;
+
+  const labels = {
+    when:"いつ（When）",
+    where:"どこ（Where）",
+    what:"なに（What）",
+    how:"どのように（How）",
+    why:"きっかけ（Why）"
+  };
+
+  Object.keys(result).forEach(k=>{
+    html += `<div class="block"><strong>${labels[k]}</strong><br>`;
+    if(result[k].length){
+      result[k].forEach(v=> html += `・${v}<br>`);
+    }else{
+      html += `<span class="miss">（情報なし）</span><br>`;
+    }
+    html += `</div>`;
+  });
+
+  // ===== 抜け項目の質問化 =====
+  const questions = [];
+  if(!result.when.length)  questions.push("いつ発生しましたか？（時間帯・状況）");
+  if(!result.where.length) questions.push("どの位置・どの部位ですか？");
+  if(!result.what.length)  questions.push("具体的に何が起きていますか？（音・振動・始動など）");
+  if(!result.how.length)   questions.push("強さ・頻度・再現性はどうですか？");
+  if(!result.why.length)   questions.push("きっかけや直前の出来事はありますか？");
+
+  if(questions.length){
+    html += `<div class="block"><strong>追加で整理すると良い視点</strong><br>`;
+    questions.forEach(q=> html += `・${q}<br>`);
+    html += `</div>`;
+  }
+
+  html += `
+  <div class="small">
+  ※これは整理ツールであり、診断・断定は行いません。<br>
+  今後、蓄積データの傾向から「見直すと良い箇所」の候補提示へ発展する可能性があります。
+  </div>
+  `;
+
+  document.getElementById("output").innerHTML = html;
+
+  // ===== 自動保存（A）=====
+  saveData({
+    rawText: text,
+    when: result.when,
+    where: result.where,
+    what: result.what,
+    how: result.how,
+    why: result.why,
+    timestamp: new Date().toISOString()
+  });
 }
 
-let resultHTML="<strong>入力内容：</strong><br>"+text+"<br><br>";
-
-let found=false;
-
-for(let category in patterns){
-let hits=[];
-patterns[category].forEach(word=>{
-if(text.includes(word)){
-hits.push(word);
-found=true;
-}
-});
-if(hits.length>0){
-resultHTML+="<strong>"+category+"</strong><br>";
-hits.forEach(h=>{ resultHTML+="・"+h+"<br>";});
-resultHTML+="<br>";
-}
+// ===== localStorage保存 =====
+function saveData(entry){
+  const key = "symptom_logs_v1";
+  const existing = JSON.parse(localStorage.getItem(key) || "[]");
+  existing.push(entry);
+  localStorage.setItem(key, JSON.stringify(existing));
 }
 
-if(!found){
-resultHTML+="該当する語彙はまだ登録されていません。";
+// ===== XSS対策（最低限）=====
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, function(m){
+    return ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[m];
+  });
 }
-
-resultHTML+=`
-<div class="small">
-※これは整理ツールです。診断ではありません。<br>
-ある程度データが集まったら、ここから診断候補を提示できる形に進化させる予定です。
-</div>
-`;
-
-document.getElementById("output").innerHTML=resultHTML;
-}
-
 </script>
 
 </body>
